@@ -1,8 +1,11 @@
+// ignore_for_file: library_private_types_in_public_api
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:take_medicine/medicine_service.dart';
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +20,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MedicationManager extends StatefulWidget {
-  const MedicationManager({Key? key});
+  const MedicationManager({super.key});
 
   @override
   _MedicationManagerState createState() => _MedicationManagerState();
@@ -25,6 +28,7 @@ class MedicationManager extends StatefulWidget {
 
 class _MedicationManagerState extends State<MedicationManager> {
   late int _selectedIndex; // Dia atual selecionado
+  late String currentDay; // Dia atual selecionado
   final List<String> _daysOfWeek = [
     'Domingo',
     'Segunda-feira',
@@ -41,6 +45,7 @@ class _MedicationManagerState extends State<MedicationManager> {
   void initState() {
     super.initState();
     _selectedIndex = DateTime.now().weekday;
+    currentDay = _daysOfWeek[_selectedIndex];
     _carregarMedicamentos(); // Carregar medicamentos ao iniciar a tela
   }
 
@@ -63,12 +68,12 @@ class _MedicationManagerState extends State<MedicationManager> {
         title: const Text('Gerenciador de Medicamentos'),
         actions: [
           IconButton(
-            icon: Icon(Icons.add),
+            icon: const Icon(Icons.add),
             onPressed: () {
               // Navegar para a tela de adicionar medicamento
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AdicionarMedicamentoScreen()),
+                MaterialPageRoute(builder: (context) => const AdicionarMedicamentoScreen()),
               ).then((value) {
                 // Atualizar a lista de medicamentos após adicionar um novo medicamento
                 if (value != null && value) {
@@ -85,22 +90,22 @@ class _MedicationManagerState extends State<MedicationManager> {
             height: 50,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: _daysOfWeek.length,
+              itemCount: 1,
               itemBuilder: (context, index) {
                 return InkWell(
                   onTap: () {
                     setState(() {
-                      _selectedIndex = index;
+                      _selectedIndex = DateTime.now().weekday;
+                      currentDay = _daysOfWeek[_selectedIndex];
                     });
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     alignment: Alignment.center,
-                    color: index == _selectedIndex
-                        ? Colors.blue
-                        : Colors.transparent,
+                    color: 
+                         Colors.blue,
                     child: Text(
-                      _daysOfWeek[index],
+                      currentDay,
                       style: TextStyle(
                         color: index == _selectedIndex
                             ? Colors.white
@@ -128,12 +133,26 @@ class _MedicationManagerState extends State<MedicationManager> {
                           subtitle: Text('Quantidade: ${medicamento.quantidade}, Horário: ${medicamento.horario}'),
                           trailing: IconButton(
                             icon: Icon(medicamento.tomado ? Icons.check_circle : Icons.radio_button_unchecked),
-                            onPressed: () {
+                            onPressed: () async {
+                              String tomou;
+                              if (medicamento.tomado){
+                                tomou = await popup(context, 'Deseja desmarcar o medicamento como tomado?');
+                              }
+                              else{
+                                if (medicamento.quantidade>1){
+                                  tomou = await popup(context, 'Lu realmente tomou os ${medicamento.quantidade} medicamentos?');
+                                }
+                                else{
+                                  tomou = await popup(context, 'Lu realmente tomou o medicamento?');
+                                }
+                              }
                               // Marcar o medicamento como tomado
                               setState(() {
-                                medicamento.tomado = !medicamento.tomado;
+                                if (tomou == 'Sim'){
+                                  medicamento.tomado = !medicamento.tomado;
+                                  MedicamentoService.updateMeducamentoStatus(medicamento.id, medicamento.tomado);
+                                }
                               });
-                              MedicamentoService.updateMeducamentoStatus(medicamento.id, medicamento.tomado);
                             },
                           ),
                           onTap: () {
@@ -154,8 +173,38 @@ class _MedicationManagerState extends State<MedicationManager> {
   }
 }
 
+Future<String> popup(BuildContext context, String message) async {
+  Completer<String> c = Completer();
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Aviso'),
+        content: Text(message),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              c.complete('Sim');
+              Navigator.of(context).pop();
+            },
+            child: const Text('Sim'),
+          ),
+            TextButton(
+              onPressed: () {
+                c.complete('Não');
+                Navigator.of(context).pop();
+              },
+              child: const Text('Não'),
+          ),
+        ],
+      );
+    },
+  );
+  return c.future;
+}
+
 class AdicionarMedicamentoScreen extends StatelessWidget {
-  const AdicionarMedicamentoScreen({Key? key}) : super(key: key);
+  const AdicionarMedicamentoScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -180,13 +229,13 @@ class AdicionarMedicamentoScreen extends StatelessWidget {
 class DetalhesMedicamentoScreen extends StatelessWidget {
   final Medicamento medicamento;
 
-  const DetalhesMedicamentoScreen({Key? key, required this.medicamento}) : super(key: key);
+  const DetalhesMedicamentoScreen({super.key, required this.medicamento});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Detalhes do Medicamento'),
+        title: const Text('Detalhes do Medicamento'),
       ),
       body: Center(
         child: Column(
