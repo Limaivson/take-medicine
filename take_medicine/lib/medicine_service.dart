@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class MedicamentoService {
-  static const String baseUrl = 'http://192.168.155.13:8000';
+  static const String baseUrl = 'http://192.168.0.165:8000';
 
   // Método para buscar todos os medicamentos
   static Future<List<Medicamento>> getMedicamentos() async {
